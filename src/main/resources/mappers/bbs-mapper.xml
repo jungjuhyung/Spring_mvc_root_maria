@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="bbs">
+	<!-- 게시판 관련 맵핑 -->
+	<select id="bbslist" resultType="bvo">
+		select * from bbs_t order by b_idx
+	</select>
+	<insert id="bbsinsert" parameterType="bvo">
+		insert into bbs_t(subject, writer, content, pwd, hit, f_name, write_date) 
+    	values(#{subject}, #{writer}, #{content}, #{pwd}, #{hit}, #{f_name}, sysdate())
+	</insert>
+	<select id="bbsdetail" parameterType="String" resultType="bvo">
+		select * from bbs_t where b_idx=#{b_idx}
+	</select>
+	<update id="bbshitupdate" parameterType="String">
+		update bbs_t
+		set hit= hit + 1
+		where b_idx = #{b_idx}
+	</update>
+	
+	<!-- 댓글 관련 맵핑 -->
+	<select id="commentlist" parameterType="String" resultType="cvo">
+		select * from comment_t where b_idx = #{b_idx}
+	</select>
+	<insert id="commentinsert" parameterType="cvo">
+		insert into comment_t(writer, content, write_date, b_idx) 
+    	values(#{writer}, #{content}, sysdate(), #{b_idx})
+	</insert>
+	<delete id="commentdelete" parameterType="String">
+		delete from comment_t where c_idx = #{c_idx}
+	</delete>
+	<!-- 게시물 총 개수 -->
+	<select id="count" resultType="int">
+		select count(*) from bbs_t
+	</select>
+	
+	<!-- 페이징  기법용 -->
+	<!-- offset : 시작행 제한하기 -->
+	<!-- limit : 출력값을 제한하기 -->
+	<!-- MySQL과 PostgreSQL에서만 사용 -->
+	<!-- Limit구는 SELECT와 -->
+	<select id="list" parameterType="Map" resultType="bvo">
+		select * from bbs_t order by b_idx desc limit #{limit} offset #{offset}
+	</select>
+	
+	<!-- 게시글 삭제 메서드(무결성 제약조건에 의해 오류) -->
+	<!-- <delete id="bbsdelete" parameterType="String">
+		delete from bbs_t where b_idx = #{b_idx}
+	</delete> -->
+	
+	<!-- 실제 게시글 삭제 처리 -->
+	<update id="bbsdelete" parameterType="String">
+		update bbs_t
+		set active = 1
+		where b_idx = #{b_idx} 
+	</update>
+</mapper>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

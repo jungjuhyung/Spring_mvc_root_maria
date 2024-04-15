@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="board">
+	<!-- 게시글 총갯수 -->
+	<select id="count" resultType="int">
+		select count(*) from board
+	</select>
+	
+	<!-- 페이징기법 게시글 리스트 가져오기 -->
+	<select id="board_list" parameterType="Map" resultType="bovo">
+		<!-- groups desc, lev asc => 그룹끼리는 내림차순, 그룹이 같은거 끼리는 오름차순 -->
+		<!-- 스텟으로 정렬하면 안된다. -->
+		select * from board order by groups desc, lev asc limit #{limit} offset #{offset}
+	</select>
+	
+	<!-- 게시글 작성 -->
+	<!-- 원글은 step과 lev가 0이다 -->
+	<!--
+	step : 어느 글에 달린 댓글인지를 판단하는 컬럼
+	ex) 원글에 달린 댓글은 0, 원글의 댓글에 달린 댓글들은 1, 원글의 댓글에 댓글에 댓글들은 2
+	-->
+	<!--
+	lev : 
+	-->
+	<!-- 입력하기 전에 특정키값을 가져온 다음 그 값을 이용해서 처리하는 mybatis 태그 => selectkey -->
+	<!-- order="BEFORE" => 작업 전에 시행한다는 의미 -->
+	<!--
+	auto_increament가 시행되기 전에 bo_idx값을 가져와서 +1을 하기때문에 값이 삽입되는 순간에는
+	bo_idx와 groups가 같은 값을 가지게 된다.
+	-->
+	<insert id="board_insert" parameterType="bovo">
+		<selectKey keyProperty="groups" resultType="String" order="BEFORE">
+			SELECT (IFNULL(MAX(bo_idx),0)+1) as groups FROM board
+	    </selectKey>
+		insert into board(writer, title, content, pwd, hit, groups, step, lev, regdate, f_name)
+		values(#{writer}, #{title}, #{content}, #{pwd}, 0, #{groups}, 0, 0, sysdate(), #{f_name})
+	</insert>
+	
+	<!-- 조회수 증가 -->
+	<update id="board_hit" parameterType="String">
+		update board set hit = hit + 1 where bo_idx = #{bo_idx}	
+	</update>
+	
+	<!-- 상세보기 -->
+	<select id="board_detail" parameterType="String" resultType="bovo">
+		select * from board where bo_idx = #{bo_idx}
+	</select>
+	
+	<!-- lev증가 업데이트 -->
+	<!-- groups이 같으면서 레벨이 크거나 같으면 기본 레벨을 증가 -->
+	<update id="lev_update" parameterType="map">
+		update board set
+		lev = lev + 1
+		where groups = #{groups} and lev >= #{lev}
+	</update>
+	
+	<!-- 리플 삽입 -->
+	<insert id="ans_insert" parameterType="bovo">
+		insert into board(writer, title, content, pwd, hit, groups, step, lev, regdate, f_name)
+		values(#{writer}, #{title}, #{content}, #{pwd}, 0, #{groups}, #{step}, #{lev}, sysdate(), #{f_name})
+	</insert>
+	
+	<!-- 원글 active = 1로 바꾸는 삭제 처리 -->
+	<update id="board_delete" parameterType="bovo">
+		update board set active = 1 where bo_idx = #{bo_idx}
+	</update>
+	
+	<!-- 리플 진짜 삭제 -->
+	<delete id="board_ans_delete" parameterType="bovo">
+		delete from board where bo_idx = #{bo_idx}
+	</delete>
+	
+	<!-- 게시물 및 리플 수정 -->
+	<update id="board_update" parameterType="bovo">
+		update board set
+		writer=#{writer}, title=#{title}, content=#{content}, f_name=#{f_name}
+		where bo_idx = #{bo_idx}
+	</update>
+</mapper>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
